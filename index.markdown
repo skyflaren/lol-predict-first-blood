@@ -77,4 +77,4 @@ For this analysis, we will perform a permutation test using a 0.05 significance 
 
 <iframe src="assets/fairness.html" width=800 height=600 frameBorder=0></iframe>
 
-Using 1000 simulations, we get the above distribution along with a p-value of 0.0. This is far below our significance level of 0.05, leading us to the conclusion of rejecting the null hypothesis that our model was equally fair. We can see the observed average precision difference is far higher than expected if it was fair, which could potentially mean that our model does better at predicting the outcome of shorter games compared to longer games.
+Using 1000 simulations, we get the above distribution along with a p-value of **0.0**. This is far below our significance level of 0.05, leading us to the conclusion of rejecting the null hypothesis that our model was equally fair. We can see the observed average precision difference is far higher than expected if it was fair, which could potentially mean that our model does better at predicting the outcome of shorter games compared to longer games.

@@ -51,7 +51,7 @@ Note we have the data split between team 0 and 1 while not actually accounting f
 
 Here we are going to create our baseline classifier, using a random forest classifier with hand-picked hyperparameters (`max_depth`=10, `n_estimators`=100). The final model will use a grid search with cross-validation to optimize them, but here we are just trying to get an estimate on how good this style of classifier is. We will be using the first 4 features (8 columns) of the cleaned dataset, `team_X_barons`, `team_X_heralds`, `team_X_elders`, `team_X_elementaldrakes` as our features. Each is an int representing the number of that epic monster that was taken, and our assumption is that the more of the epic monsters a team takes the more likely it is to win. 
 
-Using this method, we achieved an accuracy score of: `0.9030303030303031`. We see our baseline result achieving a fairly high score (far better than the 0.001 score the model we initially tried got)! Note that while the pipeline has no transformers, this is since a lot of the feature engineering we planned to do already occured in the data cleaning step, where we took the entire dataframe and compressed it into a format that we can regress on.  Next we will add the rest of the extracted values, and perform a hyperparameter search.  
+Using this method, we achieved an accuracy of: **90.30%**, which is a fairly high score. Note that while the pipeline has no transformers, this is since a lot of the feature engineering we planned to do already occured in the data cleaning step, where we took the entire dataframe and compressed it into a format that we can regress on.  Next we will add the rest of the extracted values, and perform a hyperparameter search.  
 
 ---
 
@@ -59,22 +59,22 @@ Using this method, we achieved an accuracy score of: `0.9030303030303031`. We se
 
 Here we add more features, as more data about the game should allow us to make better classifications. We will present the features to the classifier directly, as the scale of a feature in a random forest model does not impact the behavior of the model. We will, however, engineer a polynomial feature by non-linearly combining several of the features we are already using. The goal here is to create an extra feature that captures the interplay of the different game events we are studying. For example, capturing any of the epic monsters yields a buff to the team that captured it, ex. the dragon providing player stat buffs and the heralds giving you a new, strong helper. These will have an impact on the other features, and could lead to a snowballing effect that will determine the result we are predicting.
 
-Thus, we use a pipeline and `SplineTransformer` to combine a 2nd-degree polynomial for each stat, regardless of team and, using the baseline model, perform a GridSearchCV to find the best hyperparameters. Ultimately, they were `{'higher-order__unifier__degree': 2, 'higher-order__unifier__n_knots': 5}`, which achieved a 92.07% testing accuracy. Then, we fed this into a random forest classifier, which we also used a GridSearchCV to find the optimal hyperparameters for. These came out to be `{'forest__max_depth': 14, 'forest__n_estimators': 3000}`, which means our final model achieved a 91.96% testing accuracy, just under a 2% increase from the baseline.
+Thus, we use a pipeline and `SplineTransformer` to combine a 2nd-degree polynomial for each stat, regardless of team and, using the baseline model, perform a GridSearchCV to find the best hyperparameters, which was `{'higher-order__unifier__degree': 2, 'higher-order__unifier__n_knots': 5}`. Then, we fed this into a random forest classifier, which we also used a GridSearchCV to find the optimal hyperparameters for. These came out to be `{'forest__max_depth': 14, 'forest__n_estimators': 3000}`, which means our final model achieved a **91.96%** testing accuracy, just under a 2% increase from the baseline.
 
 
 ---
 
 ## Fairness Analysis
 
-Since shorter games by nature take less time, we feel that our model might have had an easier time predicting the winner of a game for shorter games. Therefore, we will perform a fairness analysis by seeing whether our model had equally good predictions for games of shorter and longer lengths each. We define the threshold for what makes a game shorter or longer we define as the median game length, which in this case, comes out to be 1839 seconds, or 30 minutes and 39 seconds. We will judge how good our model is using by calculating the average precision of our model for shorter games and subtracting the average precision for longer games to get the signed difference. 
+Since shorter games by nature take less time, we feel that our model might have had an easier time predicting the winner of a game for shorter games. Therefore, we will perform a fairness analysis by seeing whether our model had equally good predictions for games of shorter and longer lengths each. We define the threshold for what makes a game shorter or longer we define as the median game length, which in this case, comes out to be 1839 seconds, or 30 minutes and 39 seconds.
 
-Therefore, our hypotheses for this permutation test are:
+We will judge how good our model is by using the difference of group means. In this case, this means calculating the average precision of our model for shorter games and subtracting the average precision for longer games to get the signed difference.
+
+For this analysis, we will perform a permutation test using a 0.05 significance level. Our hypotheses for this are:
 
 > - `null`: Our model is equally fair; the mean precision of shorter games = mean precision of longer games
 > - `alternate`: Our model is unfair; the mean precision of shorter games > mean precision of longer games
 
-For this test, we will set the significance level to be 0.05. 
-
 <iframe src="assets/fairness.html" width=800 height=600 frameBorder=0></iframe>
 
-Using 1000 simulations, we get the above distribution along with a p-value of 0.0. This is far below our significance level of 0.05, leading us to reject the null hypothesis that our model was equally fair. We can see the observed average precision difference is far higher than expected if it was fair, meaning that our model does markedly better at predicting the outcome of shorter games compared to longer games.
+Using 1000 simulations, we get the above distribution along with a p-value of 0.0. This is far below our significance level of 0.05, leading us to the conclusion of rejecting the null hypothesis that our model was equally fair. We can see the observed average precision difference is far higher than expected if it was fair, which could potentially mean that our model does better at predicting the outcome of shorter games compared to longer games.
